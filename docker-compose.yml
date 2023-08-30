@@ -1,0 +1,45 @@
+version: '3'
+
+x-scrapy-common: &scrapy-common
+  build:
+    context: .
+    dockerfile: compose/production/Dockerfile
+  environment:
+    - PYTHONUNBUFFERED=0
+  depends_on:
+    - selenium
+  volumes:
+    - ./data:/app/data
+
+services:
+  selenium:
+    container_name: selenium
+    image: selenium/standalone-chrome-debug
+    ports:
+      - "5900:5900"
+    shm_size: 128M
+
+  scrapy_random:
+    <<: *scrapy-common
+    command: ["/start", "random"]
+
+  scrapy_companies:
+    <<: *scrapy-common
+    command: ["/start", "companies"]
+
+  scrapy_byname:
+    <<: *scrapy-common
+    command: ["/start", "byname"]
+
+  scrapy_test:
+    build:
+      context: .
+      dockerfile: compose/local/Dockerfile
+    environment:
+      - PYTHONUNBUFFERED=0
+    depends_on:
+      - selenium
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    command: [ "py.test", "tests/companies.py", "tests/selenium.py"]
